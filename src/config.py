@@ -4,5 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+    # Database
     SQLALCHEMY_DATABASE_URI = os.getenv("SUPABASE_URL")
-    SECRET_KEY = os.getenv("SECRET_KEY")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Security
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-please-change")
+    
+    # API
+    JSON_SORT_KEYS = False
+    
+    # Development
+    DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"

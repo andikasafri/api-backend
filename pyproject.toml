@@ -23,6 +23,7 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
+pythonpath = ["src"]
 
 [tool.coverage.run]
 source = ["src"]

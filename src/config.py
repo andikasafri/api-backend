@@ -5,8 +5,10 @@ load_dotenv()
 
 class Config:
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv("SUPABASE_URL")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
     
     # Security
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-please-change")

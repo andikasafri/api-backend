@@ -45,39 +45,45 @@ Create a `.env` file in the root directory with:
 ```
 SUPABASE_URL=your-supabase-url
 SECRET_KEY=your-secret-key
+FLASK_DEBUG=1
 ```
 
 ## Local Development Setup
 
 1. Clone the repository
 2. Install dependencies:
+
    ```bash
    uv sync
    ```
 
 3. Initialize the database:
+
    ```bash
    flask db upgrade
    ```
 
 4. Run the development server:
    ```bash
-   flask run
+   python main.py
    ```
 
 ## API Endpoints
 
 ### Authentication
+
 - POST `/api/v1/auth/register` - Register new user
 - POST `/api/v1/auth/login` - User login
 
 ### Users
+
 - GET `/api/v1/users` - List all users (requires authentication)
 - GET `/api/v1/users/<user_id>` - Get specific user
 - GET `/api/v1/profile` - Get current user profile
 - PUT `/api/v1/profile` - Update current user profile
 
 ### Products
+
 - GET `/api/v1/products` - List all products
 - POST `/api/v1/products` - Create new product (requires authentication)
 - GET `/api/v1/products/<product_id>` - Get specific product
@@ -85,6 +91,7 @@ SECRET_KEY=your-secret-key
 ## Testing
 
 Run tests using pytest:
+
 ```bash
 pytest
 ```
@@ -92,11 +99,15 @@ pytest
 ## Docker Support
 
 Build the Docker image:
+
 ```bash
 docker build -t sustainable-market-backend .
 ```
 
 Run the container:
+
 ```bash
-docker run -p 8000:8000 sustainable-market-backend
+docker run -p 8000:5000 sustainable-market-backend
 ```
+
+Note: The Flask app runs on port 5000 inside the container, mapped to 8000 on the host.

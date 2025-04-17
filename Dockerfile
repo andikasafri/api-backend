@@ -10,5 +10,6 @@ RUN uv sync
 FROM python:3.11-slim
 COPY --from=builder /app /app
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 EXPOSE 8000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "main:wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]

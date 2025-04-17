@@ -16,9 +16,11 @@ def test_user_creation(db):
     db.session.add(user)
     db.session.commit()
 
-    fetched_user = User.query.filter_by(email="user@example.com").first()
+    fetched_user = User.query.filter_by(email=user.email).first()
+
     assert fetched_user is not None
-    assert fetched_user.email == "user@example.com"
+    assert fetched_user.email == user.email
+
     assert fetched_user.check_password("password123")
     assert not fetched_user.check_password("wrongpassword")
 

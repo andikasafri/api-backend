@@ -1,81 +1,91 @@
+import json
 import uuid
 import pytest
 from src.models.product import Product
 
-def test_get_products(client):
-    response = client.get("/api/v1/products")
-    assert response.status_code == 200
-    assert isinstance(response.json, list)
+BASE = "/api/v1"
 
-def test_create_product(client, test_user):
-    headers = {"Authorization": test_user.api_key}
-    data = {
-        "name": "Test Product",
-        "description": "Test Description",
-        "price": 99.99
+@pytest.fixture
+def product_payload():
+    return {
+        "name": "Integration Widget",
+        "description": "Full-stack test",
+        "price": 42.42
     }
-    response = client.post("/api/v1/products", json=data, headers=headers)
-    # Expecting 201 if created successfully
-    assert response.status_code == 201, response.json
-    assert response.json["name"] == data["name"]
-    # Using approximate comparison for floating point values
-    assert abs(float(response.json["price"]) - float(data["price"])) < 1e-6
 
-def test_get_product(client, test_user, db):
-    product = Product(
+def test_get_products_empty(client):
+    resp = client.get(f"{BASE}/products")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert isinstance(data["products"], list)
+    assert data["total"] == 0
+    assert data["page"] == 1
+    assert data["per_page"] == 20
+
+def test_create_and_get_product(client, test_user, product_payload):
+    headers = {"Authorization": f"Bearer {test_user.api_key}"}
+
+    # CREATE
+    resp = client.post(
+        f"{BASE}/products",
+        headers=headers,
+        json=product_payload
+    )
+    assert resp.status_code == 201
+    created = resp.get_json()
+    assert created["name"] == product_payload["name"]
+    assert created["price"] == product_payload["price"]
+    pid = created["id"]
+
+    # GET single
+    resp2 = client.get(f"{BASE}/products/{pid}")
+    assert resp2.status_code == 200
+    fetched = resp2.get_json()
+    assert fetched["id"] == pid
+    assert fetched["description"] == product_payload["description"]
+
+def test_unauthorized_create(client, product_payload):
+    resp = client.post(f"{BASE}/products", json=product_payload)
+    # your decorator should return 401 on missing/invalid token
+    assert resp.status_code == 401
+
+def test_update_product(client, test_user, product_payload, db):
+    headers = {"Authorization": f"Bearer {test_user.api_key}"}
+    # seed one via model
+    prod = Product(
         id=str(uuid.uuid4()),
-        name="Test Product",
-        description="Test Description",
-        price=99.99,
+        name="ToBeUpdated",
+        price=9.99,
         user_id=test_user.id
     )
-    with client.application.app_context():
-        db.session.add(product)
-        db.session.commit()  # Ensure the product is committed to the session
-    product_id = product.id
-    product_name = product.name
-    response = client.get(f"/api/v1/products/{product_id}")
-    assert response.status_code == 200
-    assert response.json["name"] == product_name
+    db.session.add(prod)
+    db.session.commit()
 
-def test_update_product(client, test_user, db):
-    product = Product(
-        id=str(uuid.uuid4()),
-        name="Old Name",
-        description="Old Description",
-        price=50.0,
-        user_id=test_user.id
+    update_data = {"price": 19.99, "name": "Updated Name"}
+    resp = client.put(
+        f"{BASE}/products/{prod.id}",
+        headers=headers,
+        json=update_data
     )
-    with client.application.app_context():
-        db.session.add(product)
-        db.session.commit()  # Ensure the product is committed to the session
-
-    headers = {"Authorization": test_user.api_key}
-    data = {
-        "name": "New Name",
-        "description": "New Description",
-        "price": 75.0
-    }
-    product_id = product.id
-    response = client.put(f"/api/v1/products/{product_id}", json=data, headers=headers)
-    assert response.status_code == 200, response.json
-    assert response.json["name"] == data["name"]
-    assert abs(float(response.json["price"]) - data["price"]) < 1e-6
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["price"] == 19.99
+    assert body["name"] == "Updated Name"
 
 def test_delete_product(client, test_user, db):
-    product = Product(
+    headers = {"Authorization": f"Bearer {test_user.api_key}"}
+    # seed one via model
+    prod = Product(
         id=str(uuid.uuid4()),
-        name="Delete Product",
-        description="To be deleted",
-        price=10.0,
+        name="ToBeDeleted",
+        price=1.23,
         user_id=test_user.id
     )
-    with client.application.app_context():
-        db.session.add(product)
-        db.session.commit()  # Ensure the product is committed to the session
+    db.session.add(prod)
+    db.session.commit()
 
-    headers = {"Authorization": test_user.api_key}
-    product_id = product.id
-    response = client.delete(f"/api/v1/products/{product_id}", headers=headers)
-    assert response.status_code == 200, response.json
-    assert response.json["message"] == "Product deleted successfully"
+    resp = client.delete(f"{BASE}/products/{prod.id}", headers=headers)
+    assert resp.status_code == 200
+    assert resp.get_json()["message"] == "Product deleted successfully"
+    # ensure gone
+    assert Product.query.get(prod.id) is None

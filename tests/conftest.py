@@ -23,16 +23,22 @@ from src.models.user import User
 # -------------------------------------------------------------------
 @pytest.fixture(scope="session")
 def app():
+    # Create the Flask app and override config for testing
     app = create_app()
     app.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
     })
+
     with app.app_context():
+        # Create all tables
         _db.create_all()
         yield app
-        _db.drop_all()
+        # Teardown: only drop tables for SQLite in-memory to avoid impacting other DBs
+        uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+        if uri.startswith("sqlite"):
+            _db.drop_all()
 
 # -------------------------------------------------------------------
 # Fixture for managing the database session. This fixture is function-scoped,
@@ -74,4 +80,4 @@ def test_user(app, db):
         db.session.add(user)
         db.session.commit()
         yield user
-        # Rollback is handled by the db fixture after the test ends.
+        # db rollback is handled by the db fixture

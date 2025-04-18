@@ -16,7 +16,11 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    oauth_provider = db.Column(db.String(50))
+    oauth_id = db.Column(db.String(255))
+    
     products = db.relationship('Product', backref='user', lazy=True, cascade="all, delete-orphan")
+    transactions = db.relationship('Transaction', backref='user', lazy=True)
     
     @validates('email')
     def validate_email(self, key, email):
@@ -43,6 +47,7 @@ class User(db.Model):
             'first_name': self.first_name,
             'last_name': self.last_name,
             'is_active': self.is_active,
+            'oauth_provider': self.oauth_provider,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

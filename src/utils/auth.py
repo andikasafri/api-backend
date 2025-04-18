@@ -58,3 +58,49 @@ def token_required(f):
             logging.error(f"Authentication error: {str(e)}")
             return jsonify({"error": "Authentication failed"}), 401
     return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Missing token"}), 401
+        
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+            user_id = verify_jwt_token(token)
+            if user_id:
+                user = User.query.get(user_id)
+            else:
+                user = User.query.filter_by(api_key=token).first()
+        else:
+            user = User.query.filter_by(api_key=auth_header).first()
+        
+        if not user or not user.is_admin():
+            return jsonify({"error": "Admin access required"}), 403
+        
+        return f(user, *args, **kwargs)
+    return decorated
+
+def seller_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Missing token"}), 401
+        
+        if auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+            user_id = verify_jwt_token(token)
+            if user_id:
+                user = User.query.get(user_id)
+            else:
+                user = User.query.filter_by(api_key=token).first()
+        else:
+            user = User.query.filter_by(api_key=auth_header).first()
+        
+        if not user or not (user.is_seller() or user.is_admin()):
+            return jsonify({"error": "Seller access required"}), 403
+        
+        return f(user, *args, **kwargs)
+    return decorated
